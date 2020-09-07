@@ -16,6 +16,14 @@
 class ByteStream {
   private:
     // Your code here -- add private members as necessary.
+    // XXX: maybe need a round buffer?
+    std::string _buffer;
+
+    size_t _capacity;
+    size_t _in;
+    size_t _out;
+
+    bool _ended;
 
     bool _error{};  //!< Flag indicating that the stream suffered an error.
 
