@@ -14,7 +14,7 @@ void DUMMY_CODE(Targs &&... /* unused */) {}
 using namespace std;
 
 StreamReassembler::StreamReassembler(const size_t capacity) 
-    : _output(capacity), _capacity(capacity), _cur_num(0), _cur_idx(0), _eof_idx(0), _idx_to_substr() {}
+    : _output(capacity), _capacity(capacity), _cur_idx(0), _eof_idx(0), _idx_to_substr() {}
 
 static inline size_t str_end(const size_t index, const string &str) { return index + str.size(); }
 
@@ -41,15 +41,13 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
     }
 
     const size_t pos = _cur_idx - index;
-    _output.write(data.substr(pos));
+    const size_t size_reassembled = _output.write(data.substr(pos));
+    _cur_idx += size_reassembled;
+
     if (eof) {
         _output.end_input();
     }
-
-    const size_t size_reassembled = data.size() - pos;
-    _cur_num += size_reassembled;
-    _cur_idx += size_reassembled;
-
+    
     try_load_substr();
 }
 
@@ -62,6 +60,8 @@ size_t StreamReassembler::unassembled_bytes() const {
 }
 
 bool StreamReassembler::empty() const { return unassembled_bytes() == 0; }
+
+size_t StreamReassembler::buffer_size() { return _output.buffer_size() + unassembled_bytes(); }
 
 void StreamReassembler::try_store_substr(const size_t index, const string &data) {
     const size_t data_end = str_end(index, data);
@@ -78,16 +78,14 @@ void StreamReassembler::try_store_substr(const size_t index, const string &data)
         }
         size_t cur_end = find_next_overlap_start(cur_index, data_end);
 
-        if (_cur_num + (cur_end - cur_index) > _capacity) {
-            cur_end = cur_index + (_capacity - _cur_num);
+        if (buffer_size() + (cur_end - cur_index) > _capacity) {
+            cur_end = cur_index + (_capacity - buffer_size());
             _idx_to_substr.insert({cur_index, data.substr(cur_index - index, cur_end - cur_index)});
-            _cur_num += (cur_end - cur_index);
-            assert(_cur_num == _capacity);
+            assert(buffer_size() == _capacity);
             return;
         }
 
         _idx_to_substr.insert({cur_index, data.substr(cur_index - index, cur_end - cur_index)});
-        _cur_num += (cur_end - cur_index);
         cur_index = cur_end;
     }
     assert(cur_index == data_end);

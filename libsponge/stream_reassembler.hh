@@ -16,7 +16,6 @@ class StreamReassembler {
 
     ByteStream _output;  //!< The reassembled in-order byte stream
     size_t _capacity;    //!< The maximum number of bytes
-    size_t _cur_num;     //!< Current number of bytes
     size_t _cur_idx;     //!< Current index needed
     size_t _eof_idx;     //!< The index of eof
 
@@ -41,6 +40,8 @@ class StreamReassembler {
      *   otherwise, return [end_pos]
      */
     size_t find_next_overlap_start(size_t index, size_t end_pos);
+
+    size_t buffer_size();
 
   public:
     //! \brief Construct a `StreamReassembler` that will store up to `capacity` bytes.
