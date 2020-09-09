@@ -5,6 +5,8 @@
 
 #include <cstdint>
 #include <string>
+#include <map>
+#include <cassert>
 
 //! \brief A class that assembles a series of excerpts from a byte stream (possibly out of order,
 //! possibly overlapping) into an in-order byte stream.
@@ -14,6 +16,31 @@ class StreamReassembler {
 
     ByteStream _output;  //!< The reassembled in-order byte stream
     size_t _capacity;    //!< The maximum number of bytes
+    size_t _cur_num;     //!< Current number of bytes
+    size_t _cur_idx;     //!< Current index needed
+    size_t _eof_idx;     //!< The index of eof
+
+    // make sure there is no overlap of substr in the map
+    std::map<size_t, std::string> _idx_to_substr;
+
+    void try_store_substr(const size_t index, const std::string &data);
+
+    void try_load_substr();
+
+    /**
+     * check if there is overlap in position [index],
+     *   if there is, return the end of the overlap (if there are more overlaps tightly following
+     *     behind, return the end of the last one)
+     *   otherwise, return 0
+     */ 
+    size_t has_overlap_and_return_end(size_t index);
+
+    /**
+     * find next overlap between [index] and [end_pos]
+     *   if found, return the start of the overlap
+     *   otherwise, return [end_pos]
+     */
+    size_t find_next_overlap_start(size_t index, size_t end_pos);
 
   public:
     //! \brief Construct a `StreamReassembler` that will store up to `capacity` bytes.
