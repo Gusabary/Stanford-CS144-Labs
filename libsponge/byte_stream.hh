@@ -63,7 +63,7 @@ class ByteStream {
     //! \returns a vector of bytes read
     std::string read(const size_t len) {
         const auto ret = peek_output(len);
-        pop_output(len);
+        pop_output(ret.size());
         return ret;
     }
 

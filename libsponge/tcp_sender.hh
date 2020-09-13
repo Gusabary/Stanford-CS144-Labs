@@ -9,6 +9,35 @@
 #include <functional>
 #include <queue>
 
+// Retransmission Timer
+class RxTimer {
+  private:
+    unsigned int _timeout{0};
+    bool _running{false};
+
+  public:
+    void start(const unsigned int timeout) { 
+      _timeout = timeout;
+      _running = true;
+    }
+
+    void turn_off() { _running = false; }
+
+    bool is_running() { return _running; }
+
+    // if timeout after this tick, return true
+    bool tick(const unsigned int ms_since_last_tick) {
+      if (!_running) {
+          return false;
+      }
+      if (_timeout <= ms_since_last_tick) {
+          return true;
+      }
+      _timeout -= ms_since_last_tick;
+      return false;
+    }
+};
+
 //! \brief The "sender" part of a TCP implementation.
 
 //! Accepts a ByteStream, divides it up into segments and sends the
@@ -25,12 +54,26 @@ class TCPSender {
 
     //! retransmission timer for the connection
     unsigned int _initial_retransmission_timeout;
+    unsigned int _retransmission_timeout;
 
     //! outgoing stream of bytes that have not yet been sent
     ByteStream _stream;
 
     //! the (absolute) sequence number for the next byte to be sent
     uint64_t _next_seqno{0};
+
+    uint64_t _window_left{0};
+    uint64_t _window_right{1};  // assume window size as 1 byte initially
+
+    bool _fin_sent = false;
+    RxTimer _timer{};
+    unsigned _rx_attempts{0};
+
+    std::deque<TCPSegment> _outstanding_segs{};
+
+    void divide_and_send_segments(std::string payload, bool syn, bool fin);
+
+    void try_to_ack_segments(const uint64_t ackno_absolute);
 
   public:
     //! Initialize a TCPSender
